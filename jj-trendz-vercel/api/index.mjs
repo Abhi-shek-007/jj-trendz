@@ -10,10 +10,15 @@ export default {
       store ||= createStore();
       return await handle(request, {
         ...store,
+        ownerAccess: {email: process.env.OWNER_EMAIL, password: process.env.OWNER_PASSWORD},
         upload: async (path, bytes, contentType) => {
-          if (!process.env.BLOB_READ_WRITE_TOKEN) throw new Error('Connect a public Vercel Blob store to enable photo uploads.');
-          const blob = await put(path, bytes, {access: 'public', contentType});
-          return blob.url;
+          try {
+            const blob = await put(path, bytes, {access: 'public', contentType});
+            return blob.url;
+          } catch (error) {
+            console.error('JJ TrendZ photo upload failed:', error);
+            throw Object.assign(new Error('Photo upload failed. Check that a public Vercel Blob store is connected to this project, then redeploy.'), {status: 503});
+          }
         }
       });
     } catch (error) {
